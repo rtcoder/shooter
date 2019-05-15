@@ -1,0 +1,545 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<script src="jquery.js" type="text/javascript"></script>
+		<title>Shooter</title>
+		<script>
+		$(document).ready(function(){
+			var control_i=1;
+			var controlinfo=setInterval(function(){
+				control_i++;
+				if(control_i%2!=0){
+					$("#divspace, #divarrowup, #divarrowdown").css("background","rgba(0,0,0,0.3)");
+				}else{
+					$("#divspace, #divarrowup, #divarrowdown").css("background","rgba(0,0,0,1)");
+				}
+			},500)
+			var moveboss;
+			var player;
+			var color_generate;
+			var enemy_pocisk_shot;
+			var colorline="";
+			var top = 0;
+			var pocisk;
+			var pociskX=0;
+			var pociskY=0;
+			var enemyX=0;
+			var enemyY=0;
+			var move=true;
+			var level=1;
+			var stage=1;
+			var count_enemies=0;
+			var count_bullets=0;
+			var boss_lives=10;
+			var left_pos_bullet=0;
+			var wymiary_przeciwnik=0;
+			function spr(){//funkcja sprawdzajaca wynik
+				if(count_bullets==0 && count_enemies>0){//jezeli ilosc kul rowna sie zero i ilosc wrogow jest wieksza od zera
+					$("#info_lvl").text("Game Over").show();//wyswietlenie komunikatu o przgranej
+					$("#new").show();//pokazanie przycisku nowej gry
+					level=1;//zmiennej level przypisujemy wartosc 1
+					stage=1;//zmiennej stage przypisujemy wartosc 1
+					move=false;//wylaczenie mozliwosci strzelania
+				}
+				if(count_enemies==0){//jeżeli ilosc wrogow jest rowna zero
+					if(level===5 && stage===4){//jezeli levelrowna sie 5 i stage rowna sie 4
+						$("#info_lvl").text("Win").show();//wyswietlenie komunikatu o wygranej
+						$("#new").show();//pokazanie przycisku nowej gry
+						level=1;//zmiennej level przypisujemy wartosc 1
+						stage=1;//zmiennej stage przypisujemy wartosc 1
+						clearInterval(moveboss);//zatzymanie poruszania sie Bossa
+					}else{//w przeciwnym wypadku
+						if(level!=5){//jezeli level jest rózny od 5
+							level++;//powiekszamy level o 1
+						}else{//w przeciwnym wypadku
+							level=1;//zmiennej level przypisujemy wartosc 1
+							stage++;//stage powiekszamy o 1
+						}
+						$("#new").click();//nacisciecie przycisku nowej gry
+					}
+				}
+			}
+			function rand( min, max ){
+				min = parseInt( min, 10 );
+				max = parseInt( max, 10 );
+				if ( min > max ){
+					var tmp = min;
+					min = max;
+					max = tmp;
+				}
+				return Math.floor( Math.random() * ( max - min + 1 ) + min );
+			}
+			function colorgen(){
+				var randcolor="rgba(";
+				for(var i=0;i<3;i++){
+					randcolor = randcolor+""+rand(0, 255)+",";
+				}
+				randcolor = randcolor+"1)";
+				return randcolor;
+			}
+			function bossmove(){
+				var movetop=0;
+				var moveleft=enemyX;
+				var w_dol=true;
+				var w_lewo=true;
+				moveboss=setInterval(function(){
+					if(w_dol===true){
+						if(movetop<400){
+							movetop+=(stage/2);
+							w_dol=true;
+						}else{
+							movetop-=(stage/2);
+							w_dol=false;
+						}
+					}else{
+						if(movetop<10){
+							movetop+=(stage/2);
+							w_dol=true;
+						}else{
+							movetop-=(stage/2);
+							w_dol=false;
+						}
+					}
+					if(stage>2){
+						if(w_lewo===true){
+							if(moveleft<400){
+								moveleft+=(stage/2);
+								w_lewo=true;
+							}else{
+								moveleft-=(stage/2);
+								w_lewo=false;
+							}
+						}else{
+							if(moveleft<150){
+								moveleft+=(stage/2);
+								w_lewo=true;
+							}else{
+								moveleft-=(stage/2);
+								w_lewo=false;
+							}
+						}
+					}
+					enemyY=movetop;
+					enemyX=moveleft;
+					$("#enemy").css({"margin-top":movetop,"margin-left":moveleft})
+				},10)
+			}
+			$("#new").click(function(){//klikniecie przycisku "nowa gra"
+				$("#choose_player_container").show();//pokazanie pola wyboru postaci
+				$("#new, #controlInfo").hide();//ukrycie przycisku "nowa gra" i informacji o przyciskach
+				clearInterval(controlinfo);//zatrzymanie animacji 
+				clearInterval(moveboss);//zatzymanie poruszania sie Bossa
+				clearInterval(pocisk);//zatrzymanie kul gracza
+				count_enemies=level*2;//ilosc wrogow na dany level
+				count_bullets=count_enemies+7-level;//ilosc kul na dany poziom
+				setTimeout(function(){
+					$("#info_lvl").fadeOut(500);
+				},500);//odczekanie 3sek i ukrycie #info_lvl
+				$("#bullets").text("Bullets: "+count_bullets);//wstawienie informacji o ilosci kul
+				$("#count_enemies").text("Enemies: "+count_enemies);//wstawienie informacji o ilosci wrogow
+				$("#level").html("Level:"+level+"/5<br>Stage:"+stage+"/4");//ustawienie poziomu i etapu
+				move=true;
+				enemyX=rand(150,400);//losowa odległosc przeciwnika
+				enemyY=rand(50,400);//losowa wysokosc przeciwnika
+				boss_lives=10;//ilosc zyc Bossa
+				if(level!=5){//jeżeli to nie jest level Bossa
+					wymiary_przeciwnik=15-stage;
+					$("#enemy").show().css({"width":wymiary_przeciwnik,"height":wymiary_przeciwnik,"margin-top":enemyY,"margin-left":enemyX,"background":colorgen()});//ostylowanie wroga
+					$("#boss_lives_div").css("width","0px").hide();//ukrycie poziomu życia wroga
+				}else{//jeżeli to jest level Bossa
+					$("#enemy").show().css({"width":"50px","height":"50px","margin-top":enemyY,"margin-left":enemyX,"background":colorgen()});//ostylowanie wroga
+					$("#boss_lives_div").css("background","#4e9a06").animate({"width":475},1000).show();//pokazanie poziomu życia wroga
+					count_bullets=15;//ilosc strzalow przeznaczona na Bossa
+					count_enemies=10;//ilosc zyc Bossa
+					$("#bullets").text("Bullets: "+count_bullets);//wstawienie informacji o ilosci kul
+					$("#count_enemies").text("Boss Lives: "+count_enemies);//wstawienie informacji o ilosci wrogow
+					bossmove();//poruszanie sie Bossa
+				}
+			});
+			$(".c_player").click(function(){//wybranie postaci
+				player=$(this).attr("id");//pobranie postaci
+				$("#player").css("background","url(img/"+player+".png)");//ustawienie postaci
+				$("#napis").hide();//ukrycie ekranu powitalnego
+				$("#choose_player_container").hide();//ukrycie pola wyboru postaci
+				$("#arena, #scores").show();
+			})
+			$(document).on( "keydown", function( event ) {//nacisciecie / przytrzymanie klawisza (gora/dol)
+				var klawisz = event.which;//nr naciscietego klawisza przypisany do zmiennej "klawisz"
+				switch(klawisz){//sprawdzenie wartosci klawisza
+					case(40)://strzalka w dol
+						if(top < 420){//jeżeli wysokosc gracza jest mniejsza niz 420
+							top+=5;//powiekszenie wartosci o 5
+							$("#player").css("margin-top",top);//ustawienie wartosci gracza
+						}
+					break;
+					case(38)://strzalka w gore
+						if(top > 0){//jeżeli wysokosc gracza jest wieksza niz 0
+							top-=5;//pomniejszenie wartosci o 5
+							$("#player").css("margin-top",top);//ustawienie wartosci gracza
+						}
+					break;
+				}
+			});
+			$(document).keypress(function( event ) {
+				var klawisz = event.which;
+				if(klawisz == 32 && count_bullets!=0 && count_enemies!=0 && move===true){//spacja
+					move=false;
+					count_bullets--;
+					$("#bullets").text("Bullets: "+count_bullets);
+					clearInterval(pocisk);
+					pociskX=0;
+					pociskY=top+23-2;
+					$("#pocisk").show().css({"margin-left":pociskX,"margin-top":pociskY});
+					pocisk = setInterval(function(){
+						pociskX+=2;
+						$("#pocisk").css({"margin-left":pociskX})
+						if(pociskX>=475){
+							clearInterval(pocisk);
+							$("#pocisk").hide();
+							move=true;
+							spr()
+						}
+						if(level%5!=0){//jeżeli nie jest to level Bossa
+							clearInterval(moveboss);//zatzymanie poruszania sie Bossa
+							if(pociskX>=enemyX && pociskX<=enemyX+wymiary_przeciwnik && pociskY>=enemyY-5 && pociskY<=enemyY+wymiary_przeciwnik){//jeżeli pocisk uderzył w przeciwnika
+								clearInterval(pocisk);//zatrzymanie kul gracza
+								$("#pocisk, #enemy").hide();
+								move=true;
+								count_enemies--;
+								$("#count_enemies").text("Enemies: "+count_enemies);
+								if(count_bullets!=0){
+									enemyX=rand(100,310);
+									enemyY=rand(50,310);
+									$("#enemy").show().css({"margin-top":enemyY,"margin-left":enemyX});
+								}
+								spr()
+							}
+						}else{//jeżeli to level Bossa
+							if(pociskX>=enemyX && pociskX<=enemyX+50 && pociskY>=enemyY-5 && pociskY<=enemyY+50){//jeżeli pocisk uderzył w przeciwnika
+								clearInterval(pocisk);
+								$("#pocisk").hide();
+								boss_lives--;
+								switch(boss_lives){
+									case(10):
+										colorline="#4e9a06";
+									break;
+									case(9):
+										colorline="#7e9a06";
+									break;
+									case(8):
+										colorline="#9a9306";
+									break;
+									case(7):
+										colorline="#9a8606";
+									break;
+									case(6):
+										colorline="#9a7606";
+									break;
+									case(5):
+										colorline="#9a6f06";
+									break;
+									case(4):
+										colorline="#9a4f06";
+									break;
+									case(3):
+										colorline="#9a3606";
+									break;
+									case(2):
+										colorline="#9a1606";
+									break;
+									case(1):
+										colorline="#ca0000";
+									break;
+								}
+								count_enemies--;
+								$("#count_enemies").text("Boss Lives: "+count_enemies);
+								$("#boss_lives_div").css("background",colorline).animate({"width":475*(boss_lives/10)},500);
+								setTimeout(function(){
+									move=true;
+									spr()
+								},500)
+							}
+						}
+					},1)
+				}
+			});
+		})
+		</script>
+		<style>
+			html, body{
+				margin:0px;
+				padding:0px;
+				background:#181818;
+		
+			}
+			#shooter{
+				width:100%;
+				height:100%;
+				position:absolute
+			}
+			#game_field{
+				width:550px;
+				height:550px;
+				margin:0px auto;
+				color:#ccc;
+				background:#5F5E58
+			}
+			#napis{
+				width:550px;
+				height:550px;
+				line-height:450px;
+				font-size:60px;
+				text-align:center;
+				cursor:pointer
+			}
+			#new{
+				background:transparent;
+				height:50px;
+				width:550px;
+				font-size:30px;
+				margin:0px auto;
+				line-height:50px;
+				color:#ccc;
+				box-sizing:border-box;
+				cursor:pointer;
+				border:1px solid #adadad;
+				border-top:none;
+				text-align:center
+			}
+			#new:hover{
+				background:#4E9A06
+			}
+			#scores{
+				width:100%;
+				height:70px;
+				display:none;
+				font-size:12px;
+				float:left;
+				box-sizing:border-box;
+				border-bottom:1px solid #eee
+			}
+			#arena{
+				width:550px;
+				height:480px;
+				float:left;
+				display:none
+			}
+			#player_field{
+				width:75px;
+				height:450px;
+				margin:15px 0px;
+				float:left
+			}
+			#player{
+				margin-left:25px;
+				background:url(img/ufo.png);
+				width:50px;
+				height:45px;
+				float:left
+			}
+			#pocisk{
+				width:5px;
+				height:5px;
+				display:none;
+				background:#fff;
+				float:left;
+				border-radius:5px;
+			}
+			#enemy{
+				width:15px;
+				height:15px;
+				position:absolute;
+				display:none;
+				border:1px solid #000;
+				float:left;
+			}
+			#boss_lives_div{
+				position:absolute;
+				width:0px;
+				height:5px;
+				background:#4e9a06;
+				display:none;
+				margin-top:-10px;
+				margin-left:0px;
+			}
+			#field_enemies{
+				width:475px;
+				height:450px;
+				margin:15px 0px;
+				float:left;
+			}
+			#controlInfo{
+				width:350px;
+				height:65px;
+				text-align:center;
+				margin:0 auto;
+			}
+			#divspace{
+				width:150px;
+				height:25px;
+				background:#000;
+				float:left;
+				border-radius:5px;
+				-moz-border-radius:5px;
+				-webkit-border-radius:5px;
+				-o-border-radius:5px;
+				-khtml-border-radius:5px;
+				margin:20px 50px;
+			}
+			#arrows{
+				width:100px;
+				height:65px;
+				float:left;
+				margin:0px;
+			}
+			#divarrowup{
+				width:30px;
+				height:30px;
+				background:#000;
+				float:left;
+				border-radius:5px;
+				-moz-border-radius:5px;
+				-webkit-border-radius:5px;
+				-o-border-radius:5px;
+				-khtml-border-radius:5px;
+				margin:0px 35px 5px 35px
+			}
+			#divarrowdown{
+				width:30px;
+				height:30px;
+				background:#000;
+				float:left;
+				border-radius:5px;
+				-moz-border-radius:5px;
+				-webkit-border-radius:5px;
+				-o-border-radius:5px;
+				-khtml-border-radius:5px;
+				margin:0px 5px;
+			}
+			#divarrowleft{
+				width:30px;
+				height:30px;
+				background:#000;
+
+				float:left;
+				border-radius:5px;
+				-moz-border-radius:5px;
+				-webkit-border-radius:5px;
+				-o-border-radius:5px;
+				-khtml-border-radius:5px;
+				margin:0px;
+			}
+			#divarrowright{
+				width:30px;
+				height:30px;
+				background:#000;
+				float:left;
+				border-radius:5px;
+				-moz-border-radius:5px;
+				-webkit-border-radius:5px;
+				-o-border-radius:5px;
+				-khtml-border-radius:5px;
+				margin:0px;
+			}
+			#status{
+				width:100%;
+				float:left
+			}
+			#bullets, #count_enemies{
+				width:50%;
+				float:left;
+				height:30px;
+				line-height:30px;
+				text-align:center;
+				margin:0px;
+				padding:0px;
+			}
+			#level{
+				width:100%;
+				text-align:center;
+				float:left;
+				height:40px;
+				line-height:20px;
+			}
+			#info_lvl{
+				width:300px;
+				height:50px;
+				line-height:25px;
+				position:absolute;
+				margin:50px 125px 0px 125px;
+				background:#3465a4;
+				color:#fff;
+				font-size:20px;
+				text-align:center;
+				display:none;
+			}
+			#choose_player_container{
+				width:350px;
+				height:65px;
+				text-align:center;
+				margin:0 auto;
+				display:none;
+			}
+			.c_player{
+				margin:0px 62.5px;
+				width:50px;
+				height:45px;
+				cursor:pointer;
+				float:left;
+			}
+			#infoPlayer{
+				width:350px;
+				height:20px;
+				float:left;
+				line-height:20px;
+				font-size:17px;
+				color:#fff;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="shooter">
+			<div id="game_field">
+				<div id="napis">
+					Shooter
+					<div id="controlInfo">
+						<div id="divspace"></div>
+						<div id="arrows">
+							<div id="divarrowup"></div>
+							<div id="divarrowleft"></div>
+							<div id="divarrowdown"></div>
+							<div id="divarrowright"></div>
+						</div>
+					</div>
+					<div id="choose_player_container">
+						<div id="infoPlayer">
+							Choose your favorite character
+						</div>
+						<div class="c_player" id="duke"  style="background:transparent url(img/duke.png) no-repeat 0px 0px" title="Duke Nukem"></div>
+						<div class="c_player"  id="mrT" style="background:transparent url(img/mrT.png) no-repeat 0px 0px" title="Mr T"></div>
+					</div>
+				</div>
+				<div id="scores">
+					<div id="status">
+						<div id="bullets"></div>
+						<div id="count_enemies"></div>
+					</div>
+					<div id="level"></div>
+				</div>
+				<div id="arena">
+					<div id="info_lvl"></div>
+					<div id="player_field">
+						<div id="player" dragable></div>
+					</div>
+					<div id="field_enemies">
+						<div id="pocisk"></div>
+						<div id="boss_lives_div"></div>
+						<div id="enemy"></div>
+					</div>
+				</div>
+			</div>
+			<div id="new">NEW GAME</div>
+		</div>
+	</body>
+</html>
