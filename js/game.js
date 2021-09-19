@@ -169,8 +169,8 @@ class Game {
             this.player.setName(this.playerName);
         }
         this.enemies = [];
-        this.level = 5;
-        this.stage = 4;
+        this.level = 1;
+        this.stage = 1;
         this.enemiesLeft = this.isBossLevel ? 1 : this.level * 2;
         this.player.bulletsCount = 40// = this.enemiesLeft + 7 - this.level;
         this.createEnemies();
