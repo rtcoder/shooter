@@ -47,7 +47,6 @@ class Enemy {
 
     setPosition(x, y) {
         if (y < this.minY) {
-            console.log(y, this.minY)
             y = this.minY;
             this.moveDirection = this.moveDirection * -1;
         }
@@ -63,7 +62,6 @@ class Enemy {
 
     hitEnemy() {
         this.lives--;
-        console.log(this.lives)
     }
 
     isDead() {
